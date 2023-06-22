@@ -1,7 +1,4 @@
-# step 1.1
-# vault secrets enable pki
-# vault secrets tune -max-lease-ttl=87600h pki
-
+# step 1.1 and 1.2
 resource "vault_mount" "pki" {
   path        = "pki-example"
   type        = "pki"
@@ -11,11 +8,7 @@ resource "vault_mount" "pki" {
   max_lease_ttl_seconds     = local.ttl 
 }
 
-# vault secrets list -detailed -format=json | jq '.["pki-example/"].config.max_lease_ttl'
-
-
-## needed for section 8
-## new 1.14
+## both root and intermediate needed for section 8
 resource "vault_pki_secret_backend_key" "root" {
   backend  = vault_mount.pki.path
   type     = "internal"
@@ -24,8 +17,6 @@ resource "vault_pki_secret_backend_key" "root" {
   key_bits = "4096"
 }
 
-## needed for section 8
-## new 1.14
 resource "vault_pki_secret_backend_key" "intermediate" {
   backend  = vault_mount.pki-int.path
   type     = "internal"
@@ -34,11 +25,7 @@ resource "vault_pki_secret_backend_key" "intermediate" {
   key_bits = "4096"
 }
 
-#  vault write -field=certificate pki/root/generate/internal \
-#      common_name="example.com" \
-#      issuer_name="root-2022" \
-#      ttl=87600h > root_2022_ca.crt
-
+# 1.3
 resource "vault_pki_secret_backend_root_cert" "root_2023" {
   backend     = vault_mount.pki.path
   type        = "internal"
@@ -53,7 +40,6 @@ resource "local_file" "root_2023_cert" {
   filename = "root_2022_ca.crt"
 }
 
-# new for 1.14
 # used to update name and properties
 # manages lifecycle of existing issuer
 resource "vault_pki_secret_backend_issuer" "root" {
@@ -62,8 +48,7 @@ resource "vault_pki_secret_backend_issuer" "root" {
   issuer_name = "root-2023"
 }
 
-# generate a role for root issuer
-# vault write pki/roles/2022-servers allow_any_name=true
+# 1.6
 resource "vault_pki_secret_backend_role" "role" {
   backend          = vault_mount.pki.path
   name             = "2023-servers-role"
@@ -76,11 +61,7 @@ resource "vault_pki_secret_backend_role" "role" {
   allow_any_name   = true
 }
 
-# vault write pki/config/urls \
-#      issuing_certificates="$VAULT_ADDR/v1/pki/ca" \
-#      crl_distribution_points="$VAULT_ADDR/v1/pki/crl"
-
-# TODO: update to use vars/env vars set the addresses
+# 1.7
 resource "vault_pki_secret_backend_config_urls" "config-urls" {
    backend = vault_mount.pki.path
    issuing_certificates    = ["http://localhost:8200/v1/pki/ca"]
