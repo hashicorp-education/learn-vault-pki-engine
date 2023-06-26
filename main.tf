@@ -1,6 +1,6 @@
 # step 1.1 and 1.2
 resource "vault_mount" "pki" {
-  path        = "pki-example"
+  path        = "pki"
   type        = "pki"
   description = "This is an example PKI mount"
 
@@ -68,11 +68,11 @@ resource "vault_pki_secret_backend_config_urls" "config-urls" {
    crl_distribution_points = ["http://localhost:8200/v1/pki/crl"]
 }
 
-# 2.1 - 2.2
+# Step 2.1 - 2.2
 # vault secrets enable -path=pki_int pki
 # vault secrets tune -max-lease-ttl=43800h pki_int
 resource "vault_mount" "pki-int" {
-  path        = "pki_int_example"
+  path        = "pki_int"
   type        = "pki"
   description = "This is an example intermediate PKI mount"
 
@@ -80,7 +80,7 @@ resource "vault_mount" "pki-int" {
   max_lease_ttl_seconds     = 157680000
 }
 
-# 3.3
+# 2.3
 # vault write -format=json pki_int/intermediate/generate/internal \
 #      common_name="example.com Intermediate Authority" \
 #      issuer_name="example-dot-com-intermediate" \
@@ -90,7 +90,7 @@ resource "vault_pki_secret_backend_intermediate_cert_request" "csr-request" {
   backend     = vault_mount.pki-int.path
   type        = vault_pki_secret_backend_root_cert.root_2023.type
   common_name = "example.com Intermediate Authority"
-  ## key ref?
+  key_ref = vault_pki_secret_backend_key.intermediate
 }
 
 resource "local_file" "csr_request_cert" {
