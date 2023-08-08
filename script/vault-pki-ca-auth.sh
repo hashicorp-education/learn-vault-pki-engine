@@ -46,7 +46,7 @@ vault secrets enable -path=pki_int pki
 
 vault secrets tune -max-lease-ttl=43800h pki_int
 
-echo "Intermediate Authority"
+echo "2.3 Intermediate Authority"
 
 vault write -format=json pki_int/intermediate/generate/internal \
      common_name="example.com Intermediate Authority" \
@@ -54,6 +54,7 @@ vault write -format=json pki_int/intermediate/generate/internal \
      | jq -r '.data.csr' > pki_intermediate.csr
 
 cat pki_intermediate.csr
+
 echo "step 2.4"
 vault write -format=json pki/root/sign-intermediate \
      issuer_ref="root-2023" \
