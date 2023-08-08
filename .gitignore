@@ -27,3 +27,6 @@ out/
 *.pem
 *.crt
 *.csr
+terraform/step1to4/orig.tf.txt
+terraform/vinay/vinays.tf
+script/set_signed.tf
