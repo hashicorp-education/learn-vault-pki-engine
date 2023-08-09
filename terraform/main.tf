@@ -89,9 +89,8 @@ resource "vault_pki_secret_backend_issuer" "intermediate" {
 
 resource "vault_pki_secret_backend_intermediate_cert_request" "csr-request" {
   backend     = vault_mount.pki_int.path
-  type        = vault_pki_secret_backend_root_cert.root_2023.type
+  type        = "internal"
   common_name = "example.com Intermediate Authority"
-  key_ref     = vault_pki_secret_backend_root_cert.root_2023.key_id
 }
 
 resource "local_file" "csr_request_cert" {
@@ -185,6 +184,7 @@ resource "vault_pki_secret_backend_root_cert" "root_2024" {
   common_name = "example.com 2"
   ttl         = "315360000"
   issuer_name = "root-2024"
+  key_name = "root_2024"
 }
 
 
@@ -230,7 +230,7 @@ resource "vault_pki_secret_backend_intermediate_cert_request" "new_csr" {
   backend     = vault_mount.pki.path
   type        = "existing"
   common_name = "example.com"
-  key_ref = vault_pki_secret_backend_root_cert.root_2024.key_id
+  key_ref = vault_pki_secret_backend_root_cert.root_2024.key_name
 }
 
 ## write to file
