@@ -181,7 +181,7 @@ resource "vault_pki_secret_backend_cert" "example-dot-com" {
 resource "vault_pki_secret_backend_root_cert" "root_2024" {
   backend     = vault_mount.pki.path
   type        = "internal"
-  common_name = "example.com 2"
+  common_name = "example.com"
   ttl         = "315360000"
   issuer_name = "root-2024"
   key_name = "root_2024"
