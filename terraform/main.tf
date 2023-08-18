@@ -171,8 +171,6 @@ resource "vault_pki_secret_backend_cert" "example-dot-com" {
 #     common_name="example.com" \
 #     issuer_name="root-2024"
 #
-# these are the same
-#
 # Method	Path
 # POST	/pki/root/generate/:type
 # POST	/pki/issuers/generate/root/:type
@@ -187,8 +185,6 @@ resource "vault_pki_secret_backend_root_cert" "root_2024" {
   key_name = "root_2024"
 }
 
-
-
 # used to update name and properties
 # manages lifecycle of existing issuer
 resource "vault_pki_secret_backend_issuer" "root_2024" {
@@ -202,18 +198,8 @@ resource "vault_pki_secret_backend_issuer" "root_2024" {
 resource "vault_pki_secret_backend_role" "role_2024" {
   backend       = vault_mount.pki.path
   name          = "2024-servers"
-#   ttl           = 86400
-#   allow_ip_sans = true
-#   key_type      = "rsa"
-#   key_bits      = 4096
   allow_any_name   = true
 }
-
-# output "vault_pki_secret_backend_root_cert_root_2024" {
-#    value = vault_pki_secret_backend_root_cert.root_2024
-# }
-
-# Section 8 set up
 
 # 8.1 - creates a new cross-signed intermediate CSR
 # uses key from new root in step 7
@@ -225,7 +211,6 @@ resource "vault_pki_secret_backend_role" "role_2024" {
 #       | tee cross-signed-intermediate.csr
 # pki/intermediate/cross-sign == pki/issuers/generate/intermediate/existing
 
-## Create new CSR
 resource "vault_pki_secret_backend_intermediate_cert_request" "new_csr" {
   backend     = vault_mount.pki.path
   type        = "existing"
@@ -239,88 +224,31 @@ resource "local_file" "new_csr_file" {
   filename = "cross-signed-intermediate.csr"
 }
 
-output "vault_pki_secret_backend_intermediate_cert_request_new_cert" {
-   value = vault_pki_secret_backend_intermediate_cert_request.new_csr
-   sensitive = true
-}
-
 # 8.2 - sign csr with older root CA
 # vault write -format=json pki/issuer/root-2023/sign-intermediate \
 #       common_name="example.com" \
 #       csr=@cross-signed-intermediate.csr \
 #       | jq -r '.data.certificate' | tee cross-signed-intermediate.crt
 
-## Sign CSR with new parent
 resource "vault_pki_secret_backend_root_sign_intermediate" "root_2024" {
   backend     = vault_mount.pki.path
   csr         = vault_pki_secret_backend_intermediate_cert_request.new_csr.csr
   common_name = "example.com"
-#  format      = "pem_bundle"
   ttl         = 43800
   issuer_ref = vault_pki_secret_backend_root_cert.root_2023.issuer_id
 }
-
-# output "vault_pki_secret_backend_root_sign_intermediate_new_cert_ca_chain" {
-#    value = vault_pki_secret_backend_root_sign_intermediate.new.ca_chain
-# }
 
 # 8.3
 # vault write pki/intermediate/set-signed \
 #       certificate=@cross-signed-intermediate.crt
 
-resource "local_file" "vault_pki_secret_backend_root_sign_intermediate_cert" {
-  content  = vault_pki_secret_backend_root_sign_intermediate.root_2024.certificate
-  filename = "cross-signed-intermediate.crt"
-}
-
-## Import new issuers into existing intermediate mount
 resource "vault_pki_secret_backend_intermediate_set_signed" "root_2024" {
   backend     = vault_mount.pki.path
   certificate = vault_pki_secret_backend_root_sign_intermediate.root_2024.certificate
-#   certificate = file("cross-signed-intermediate.crt")
-}
-
-output "vault_pki_secret_backend_intermediate_set_signed_new" {
-   value = vault_pki_secret_backend_intermediate_set_signed.root_2024
 }
 
 # 8.4 - print 
 # vault read pki/issuer/root-2024
-# confirm multiple certs in print out per 8.4 
-
-# resource "vault_pki_secret_backend_cert" "new" {
-#   backend     = vault_pki_secret_backend_role.role.backend
-#   name        = vault_pki_secret_backend_role.role.name
-#   common_name = "test2.example.com"
-#   ttl         = "1h"
-#   issuer_ref  = vault_pki_secret_backend_issuer.root_2023.issuer_ref
-# }
-
-# output "vault_pki_secret_backend_cert_new_ca_chain" {
-#   value = vault_pki_secret_backend_cert.new.ca_chain
-# }
-
-# output "new_certs_issuer_name" {
-#    value = vault_pki_secret_backend_cert.new.issuing_ca
-# }
-
-# # TODO: add back in after confirmation of functionality
-# # check with Vinay if should be included
-# # # Import issuer or key data to aid in migration
-# # data "vault_pki_secret_backend_keys" "initial" {
-# #   backend = vault_pki_secret_backend_root_sign_intermediate.intermediate.backend
-# # }
-
-# # data "vault_pki_secret_backend_issuers" "initial" {
-# #   backend = vault_pki_secret_backend_root_sign_intermediate.intermediate.backend
-# # }
-
-# # data "vault_pki_secret_backend_key" "missing" {
-# #   backend = vault_mount.pki.path
-# #   key_ref = data.vault_pki_secret_backend_keys.initial.keys[0]
-# # }
-
-# # data "vault_pki_secret_backend_issuer" "missing" {
-# #   backend    = vault_pki_secret_backend_root_sign_intermediate.intermediate.backend
-# #   issuer_ref = data.vault_pki_secret_backend_issuers.initial.keys[0]
-# # }
+output "vault_pki_secret_backend_root_sign_intermediate_root_2024_ca_chain" {
+   value = vault_pki_secret_backend_root_sign_intermediate.root_2024.ca_chain
+}
