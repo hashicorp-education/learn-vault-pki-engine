@@ -48,9 +48,14 @@ vault secrets tune -max-lease-ttl=43800h pki_int
 
 echo "2.3 Intermediate Authority"
 
+# original
+# vault write -format=json pki_int/intermediate/generate/internal \
+#      common_name="example.com Intermediate Authority" \
+#      issuer_name="example-dot-com-intermediate" \
+#      | jq -r '.data.csr' > pki_intermediate.csr
+
 vault write -format=json pki_int/intermediate/generate/internal \
      common_name="example.com Intermediate Authority" \
-     issuer_name="example-dot-com-intermediate" \
      | jq -r '.data.csr' > pki_intermediate.csr
 
 cat pki_intermediate.csr
